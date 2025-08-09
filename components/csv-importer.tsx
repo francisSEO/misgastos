@@ -186,10 +186,9 @@ export function CsvImporter({ userId }: CsvImporterProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-[#1d1e22] border-none">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Upload className="h-5 w-5" />
+          <CardTitle className="flex items-center space-x-2 text-white">
             <span>Subir Archivo CSV</span>
           </CardTitle>
           <CardDescription>
@@ -198,8 +197,8 @@ export function CsvImporter({ userId }: CsvImporterProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="csv-file">Seleccionar archivo CSV</Label>
-            <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} disabled={loading} />
+            <Label htmlFor="csv-file" className="text-white">Seleccionar archivo CSV</Label>
+            <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} disabled={loading} className="bg-[#81a1c1] border-none cursor-pointer" />
           </div>
 
           {file && (
@@ -223,7 +222,7 @@ export function CsvImporter({ userId }: CsvImporterProps) {
 
       {preview.length > 0 && (
         <>
-          <Card>
+          <Card className="bg-[#1d1e22] border-none">
             <CardHeader>
               <CardTitle>Vista Previa (editable)</CardTitle>
               <CardDescription>
@@ -335,17 +334,18 @@ export function CsvImporter({ userId }: CsvImporterProps) {
         </Alert>
       )}
 
-      <Card>
+      <Card className="bg-[#1d1e22] border-none">
         <CardHeader>
-          <CardTitle>Formato del archivo CSV</CardTitle>
+          <CardTitle className="text-white">Formato del archivo CSV</CardTitle>
+          <CardDescription>
+            Tu archivo CSV debe tener las siguientes columnas (con estos nombres exactos):
+          </CardDescription>
         </CardHeader>
+        
         <CardContent>
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Tu archivo CSV debe tener las siguientes columnas (con estos nombres exactos):
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <code className="text-sm">
+            <div className="bg-[#17191D] p-4 rounded-lg">
+              <code className="text-sm text-white">
                 date,userid,description,amount,category,shared
                 <br />
                 2025-08-09,maria,"Cena en restaurante",45.20,Comida,TRUE

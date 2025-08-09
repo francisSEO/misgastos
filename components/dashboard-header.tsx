@@ -9,13 +9,12 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ userEmail, onLogout }: DashboardHeaderProps) {
   return (
-    <header className="bg-background shadow">
+    <header className="backdrop-blur-sm bg-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-6">
-          <h1 className="text-1l font-bold white">Control de Gastos</h1>
+          <a href="/" className="cursor-pointer"><h1 className="text-l font-semibold text-white">Control de Gastos</h1></a>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">Hola, {userEmail}</span>
-            <Button onClick={onLogout} variant="outline">
+            <Button onClick={onLogout} variant="outline" className="bg-[#1d1e22] border-white/20 text-white hover:bg-white/10">
               Cerrar Sesión
             </Button>
           </div>

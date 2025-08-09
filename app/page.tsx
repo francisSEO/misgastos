@@ -33,11 +33,11 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Control de Gastos</h1>
-          <p className="mt-2 text-gray-600">Gestiona tus gastos de forma inteligente</p>
+          <h1 className="text-3xl font-bold text-white">Control de Gastos</h1>
+          <p className="mt-2 text-gray-300">Gestiona tus gastos de forma inteligente</p>
         </div>
         <LoginForm />
       </div>

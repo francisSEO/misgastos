@@ -118,6 +118,17 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+  }
+  
+  /* Mejoras para el tema oscuro */
+  .card {
+    @apply bg-white/10 backdrop-blur-sm border-white/20;
+  }
+  
+  /* Override para cards en modo oscuro */
+  [data-theme="dark"] .card,
+  .dark .card {
+    @apply bg-white/10 backdrop-blur-sm border-white/20;
   }
 }
