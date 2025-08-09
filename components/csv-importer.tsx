@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Papa from "papaparse"
 import { Button } from "@/components/ui/button"
@@ -20,11 +19,41 @@ interface CsvImporterProps {
 }
 
 interface CsvRow {
-  fecha: string
-  importe: string
-  descripcion: string
-  categoria?: string
+  date: string
+  userid: string
+  description: string
+  amount: string
+  category?: string
 }
+
+const CATEGORY_OPTIONS = [
+  "Hogar",
+  "Servicios",
+  "Supermercado",
+  "Coche",
+  "Ocio",
+  "Transporte",
+  "Comer fuera",
+  "Salud",
+  "Gym",
+  "Compras varias",
+  "Viajes",
+  "Regalos",
+  "Otros",
+  "Tabaco",
+  "Formación",
+  "Harry",
+  "Sueldo Francis",
+  "Sueldo María",
+  "Pagas extra Francis",
+  "Pagas extra María",
+  "Fondos indexados Francis",
+  "Fondos indexados María",
+  "Gastos Manzanilla",
+  "Ingreso Manzanilla",
+  "Gastos Av. Constitución",
+  "Ingreso Av. Constitución",
+]
 
 export function CsvImporter({ userId }: CsvImporterProps) {
   const [file, setFile] = useState<File | null>(null)
@@ -51,10 +80,8 @@ export function CsvImporter({ userId }: CsvImporterProps) {
       skipEmptyLines: true,
       complete: (results) => {
         const previewData = results.data
-          .slice(0, 5)
           .map((row: any) => processCsvRow(row as CsvRow))
           .filter(Boolean) as Expense[]
-
         setPreview(previewData)
       },
       error: (error) => {
@@ -66,31 +93,47 @@ export function CsvImporter({ userId }: CsvImporterProps) {
   const processCsvRow = (row: CsvRow): Expense | null => {
     try {
       // Normalizar fecha
-      const date = new Date(row.fecha)
+      const date = new Date(row.date)
       if (isNaN(date.getTime())) {
         throw new Error("Fecha inválida")
       }
 
       // Normalizar importe
-      const amount = Number.parseFloat(row.importe.replace(",", "."))
+      const amount = Number.parseFloat(
+        typeof row.amount === "string" ? row.amount.replace(",", ".") : row.amount
+      )
       if (isNaN(amount)) {
         throw new Error("Importe inválido")
       }
 
       // Asignar categoría
-      const category = row.categoria || categorizeExpense(row.descripcion)
+      const category = row.category || categorizeExpense(row.description)
 
       // Calcular mes
       const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
 
+      // Procesar campo compartido
+      let shared = false
+      if (row.shared !== undefined) {
+        shared =
+          row.shared === "true" ||
+          row.shared === "1" ||
+          row.shared === "TRUE" ||
+          row.shared === "sí" ||
+          row.shared === "Sí" ||
+          row.shared === "SI" ||
+          row.shared === "si"
+      }
+
       return {
-        userId,
+        userId: row.userid,
         date: date.toISOString().split("T")[0],
-        amount: Math.abs(amount), // Asegurar que sea positivo
+        amount: Math.abs(amount),
         category,
-        description: row.descripcion,
+        description: row.description,
         month,
         createdAt: new Date().toISOString(),
+        shared,
       }
     } catch (error) {
       console.error("Error procesando fila:", row, error)
@@ -98,52 +141,42 @@ export function CsvImporter({ userId }: CsvImporterProps) {
     }
   }
 
+  // Permitir editar la vista previa
+  const handlePreviewChange = (index: number, field: keyof Expense, value: any) => {
+    setPreview((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              [field]:
+                field === "amount"
+                  ? Number.parseFloat(value.replace(",", "."))
+                  : field === "shared"
+                  ? Boolean(value)
+                  : value,
+            }
+          : item
+      )
+    )
+  }
+
   const handleImport = async () => {
-    if (!file) return
+    if (!preview.length) return
 
     setLoading(true)
     setError("")
     setProgress(0)
 
     try {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          const expenses: Expense[] = []
-          const total = results.data.length
+      await addExpensesBatch(preview)
+      setProgress(100)
+      setSuccess(true)
+      setFile(null)
+      setPreview([])
 
-          for (let i = 0; i < results.data.length; i++) {
-            const row = results.data[i] as CsvRow
-            const expense = processCsvRow(row)
-
-            if (expense) {
-              expenses.push(expense)
-            }
-
-            // Actualizar progreso
-            setProgress(Math.round(((i + 1) / total) * 50))
-          }
-
-          if (expenses.length === 0) {
-            throw new Error("No se pudieron procesar gastos del archivo")
-          }
-
-          // Guardar en Firestore
-          await addExpensesBatch(expenses)
-          setProgress(100)
-          setSuccess(true)
-          setFile(null)
-          setPreview([])
-
-          // Reset file input
-          const fileInput = document.getElementById("csv-file") as HTMLInputElement
-          if (fileInput) fileInput.value = ""
-        },
-        error: (error) => {
-          throw new Error("Error al procesar CSV: " + error.message)
-        },
-      })
+      // Reset file input
+      const fileInput = document.getElementById("csv-file") as HTMLInputElement
+      if (fileInput) fileInput.value = ""
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -160,7 +193,7 @@ export function CsvImporter({ userId }: CsvImporterProps) {
             <span>Subir Archivo CSV</span>
           </CardTitle>
           <CardDescription>
-            Sube un archivo CSV con las columnas: fecha, importe, descripcion, categoria (opcional)
+            Sube un archivo CSV con las columnas: date, userid, description, amount, category (opcional)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,47 +218,105 @@ export function CsvImporter({ userId }: CsvImporterProps) {
             </div>
           )}
 
-          <Button onClick={handleImport} disabled={!file || loading} className="w-full">
-            {loading ? "Importando..." : "Importar Gastos"}
-          </Button>
         </CardContent>
       </Card>
 
       {preview.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Vista Previa (primeros 5 registros)</CardTitle>
-            <CardDescription>Revisa cómo se procesarán tus datos antes de importar</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Fecha</th>
-                    <th className="text-left p-2">Importe</th>
-                    <th className="text-left p-2">Categoría</th>
-                    <th className="text-left p-2">Descripción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map((expense, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="p-2">{expense.date}</td>
-                      <td className="p-2">€{expense.amount.toFixed(2)}</td>
-                      <td className="p-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                          {expense.category}
-                        </span>
-                      </td>
-                      <td className="p-2">{expense.description}</td>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Vista Previa (editable)</CardTitle>
+              <CardDescription>
+                Revisa y edita tus datos antes de importar. Puedes modificar cualquier campo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Fecha</th>
+                      <th className="text-left p-2">Usuario</th>
+                      <th className="text-left p-2">Descripción</th>
+                      <th className="text-left p-2">Importe</th>
+                      <th className="text-left p-2">Categoría</th>
+                      <th className="text-left p-2">Compartido</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {preview.map((expense, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="p-2">
+                          <Input
+                            type="date"
+                            value={expense.date}
+                            onChange={(e) => handlePreviewChange(index, "date", e.target.value)}
+                            className="w-36"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={expense.userId}
+                            onChange={(e) => handlePreviewChange(index, "userId", e.target.value)}
+                            className="w-32 border rounded px-2 py-1"
+                          >
+                            <option value="">Selecciona usuario</option>
+                            <option value="Maria">Maria</option>
+                            <option value="Francis">Francis</option>
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <Input
+                            type="text"
+                            value={expense.description}
+                            onChange={(e) => handlePreviewChange(index, "description", e.target.value)}
+                            className="w-64"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Input
+                            type="number"
+                            value={expense.amount}
+                            onChange={(e) => handlePreviewChange(index, "amount", e.target.value)}
+                            className="w-24"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={expense.category}
+                            onChange={(e) => handlePreviewChange(index, "category", e.target.value)}
+                            className="w-48 border rounded px-2 py-1"
+                          >
+                            <option value="">Selecciona categoría</option>
+                            {CATEGORY_OPTIONS.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!expense.shared}
+                            onChange={(e) => handlePreviewChange(index, "shared", e.target.checked)}
+                            style={{ width: "22px", height: "22px" }}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Botón de importación debajo de la previsualización */}
+          <div className="mt-4">
+            <Button onClick={handleImport} disabled={!preview.length || loading} className="w-full">
+              {loading ? "Importando..." : "Importar Gastos"}
+            </Button>
+          </div>
+        </>
       )}
 
       {success && (
@@ -255,29 +346,16 @@ export function CsvImporter({ userId }: CsvImporterProps) {
             </p>
             <div className="bg-gray-50 p-4 rounded-lg">
               <code className="text-sm">
-                fecha,importe,descripcion,categoria
+                date,userid,description,amount,category,shared
                 <br />
-                2025-08-09,45.20,"Cena en restaurante",Comida
+                2025-08-09,maria,"Cena en restaurante",45.20,Comida,TRUE
                 <br />
-                2025-08-08,25.50,"Gasolina",Transporte
+                2025-08-08,maria,"Gasolina",25.50,Transporte,TRUE
                 <br />
-                2025-08-07,12.30,"Supermercado Mercadona"
+                2025-08-07,maria,"Supermercado Mercadona",12.30,FALSE
               </code>
             </div>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>
-                <strong>fecha:</strong> Formato YYYY-MM-DD
-              </li>
-              <li>
-                <strong>importe:</strong> Número decimal (usa punto o coma)
-              </li>
-              <li>
-                <strong>descripcion:</strong> Descripción del gasto
-              </li>
-              <li>
-                <strong>categoria:</strong> Opcional, se asignará automáticamente si no se especifica
-              </li>
-            </ul>
+            
           </div>
         </CardContent>
       </Card>

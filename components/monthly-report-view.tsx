@@ -16,51 +16,40 @@ interface MonthlyReportViewProps {
 }
 
 export function MonthlyReportView({ userId }: MonthlyReportViewProps) {
-  const [selectedMonth, setSelectedMonth] = useState("")
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(String(new Date().getMonth() + 1).padStart(2, "0"))
   const [report, setReport] = useState<MonthlyReport | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Generar opciones de meses (últimos 12 meses)
-  const generateMonthOptions = () => {
-    const options = []
-    const now = new Date()
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 12 }, (_, i) => currentYear - i)
+  const months = [
+    { value: "01", label: "Enero" },
+    { value: "02", label: "Febrero" },
+    { value: "03", label: "Marzo" },
+    { value: "04", label: "Abril" },
+    { value: "05", label: "Mayo" },
+    { value: "06", label: "Junio" },
+    { value: "07", label: "Julio" },
+    { value: "08", label: "Agosto" },
+    { value: "09", label: "Septiembre" },
+    { value: "10", label: "Octubre" },
+    { value: "11", label: "Noviembre" },
+    { value: "12", label: "Diciembre" },
+  ]
 
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-      const monthLabel = date.toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-      })
-
-      options.push({ value: monthKey, label: monthLabel })
-    }
-
-    return options
-  }
-
-  const monthOptions = generateMonthOptions()
-
-  // Seleccionar mes actual por defecto
+  // Cargar reporte cuando cambie el mes o el año
   useEffect(() => {
-    if (monthOptions.length > 0 && !selectedMonth) {
-      setSelectedMonth(monthOptions[0].value)
-    }
-  }, [monthOptions, selectedMonth])
-
-  // Cargar reporte cuando cambie el mes
-  useEffect(() => {
-    if (selectedMonth) {
+    if (selectedYear && selectedMonth) {
       loadReport()
     }
-  }, [selectedMonth])
+  }, [selectedYear, selectedMonth])
 
   const loadReport = async () => {
-    if (!selectedMonth) return
-
+    const monthKey = `${selectedYear}-${selectedMonth}`
     setLoading(true)
     try {
-      const reportData = await getMonthlyReport(userId, selectedMonth)
+      const reportData = await getMonthlyReport(userId, monthKey)
       setReport(reportData)
     } catch (error) {
       console.error("Error cargando reporte:", error)
@@ -72,7 +61,7 @@ export function MonthlyReportView({ userId }: MonthlyReportViewProps) {
   const exportToCsv = () => {
     if (!report || !report.expenses.length) return
 
-    const headers = ["Fecha", "Importe", "Categoría", "Descripción"]
+    const headers = ["Fecha", "Importe", "Categoría", "Descripción","Compartido"]
     const csvContent = [
       headers.join(","),
       ...report.expenses.map((expense) =>
@@ -107,19 +96,32 @@ export function MonthlyReportView({ userId }: MonthlyReportViewProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4">
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Selecciona un mes" />
+            {/* Año */}
+            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Año" />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {years.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
+            {/* Mes */}
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Mes" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {report && report.expenses.length > 0 && (
               <Button onClick={exportToCsv} variant="outline">
                 <Download className="h-4 w-4 mr-2" />
@@ -205,19 +207,21 @@ export function MonthlyReportView({ userId }: MonthlyReportViewProps) {
                         <th className="text-left p-2">Importe</th>
                         <th className="text-left p-2">Categoría</th>
                         <th className="text-left p-2">Descripción</th>
+                        <th className="text-left p-2">Compartido</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.expenses.map((expense, index) => (
                         <tr key={expense.id || index} className="border-b hover:bg-gray-50">
                           <td className="p-2">{expense.date}</td>
-                          <td className="p-2 font-medium">€{expense.amount.toFixed(2)}</td>
+                          <td className="p-2 font-medium">{expense.amount.toFixed(2)} €</td>
                           <td className="p-2">
                             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
                               {expense.category}
                             </span>
                           </td>
                           <td className="p-2">{expense.description}</td>
+                          <td className="p-2">{expense.shared}</td>
                         </tr>
                       ))}
                     </tbody>

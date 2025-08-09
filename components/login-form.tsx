@@ -54,10 +54,7 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-            <TabsTrigger value="register">Registrarse</TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-4">
@@ -81,27 +78,7 @@ export function LoginForm() {
             </form>
           </TabsContent>
 
-          <TabsContent value="register">
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reg-email">Email</Label>
-                <Input id="reg-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-password">Contraseña</Label>
-                <Input
-                  id="reg-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Registrando..." : "Crear Cuenta"}
-              </Button>
-            </form>
-          </TabsContent>
+
         </Tabs>
 
         {error && (

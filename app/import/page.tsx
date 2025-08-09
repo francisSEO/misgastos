@@ -9,6 +9,7 @@ import { CsvImporter } from "@/components/csv-importer"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { DashboardHeader } from "@/components/dashboard-header"
 
 export default function ImportPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -27,6 +28,11 @@ export default function ImportPage() {
     return () => unsubscribe()
   }, [router])
 
+  const handleLogout = async () => {
+    await auth.signOut()
+    router.push("/")
+  }
+
   if (loading) {
     return <LoadingSpinner />
   }
@@ -37,21 +43,8 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="mr-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
-              </Button>
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Importar Gastos</h1>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+      <DashboardHeader userEmail={user.email ?? ""} onLogout={handleLogout} />
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <CsvImporter userId={user.uid} />
         </div>

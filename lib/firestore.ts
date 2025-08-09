@@ -50,7 +50,8 @@ export async function getExpensesByUserAndMonth(userId: string, month: string): 
 }
 
 export async function getMonthlyReport(userId: string, month: string): Promise<MonthlyReport> {
-  const expenses = await getExpensesByUserAndMonth(userId, month)
+  console.log("getMonthlyReport llamado con:", userId, month)
+  const expenses = await getExpensesByMonth(month)
 
   const categoryTotals: Record<string, CategorySummary> = {}
   let totalAmount = 0
@@ -101,3 +102,98 @@ export async function getAllExpensesByUser(userId: string): Promise<Expense[]> {
       }) as Expense,
   )
 }
+
+export async function getExpensesByMonth(month: string): Promise<Expense[]> {
+  console.log("getExpensesByMonth llamado con:", month)
+  const q = query(
+    collection(db, EXPENSES_COLLECTION),
+    where("month", "==", month),
+    orderBy("date", "desc"),
+  )
+  const querySnapshot = await getDocs(q)
+  console.log("Gastos encontrados para", month, ":", querySnapshot.size)
+  return querySnapshot.docs.map((doc) => {
+    const data = doc.data();
+    // Convierte el campo date si es Timestamp
+    let date = data.date;
+    if (date && typeof date === "object" && date.seconds) {
+      date = new Date(date.seconds * 1000).toISOString().split("T")[0];
+    }
+    return {
+      id: doc.id,
+      ...data,
+      date,
+    } as Expense;
+  });
+}
+
+interface CsvRow {
+  date: string
+  userid: string
+  description: string
+  amount: string
+  category?: string
+  shared?: string // Puede venir como "true", "false", "1", "0", etc.
+}
+
+const processCsvRow = (row: CsvRow): Expense | null => {
+  try {
+    // Procesar campo date
+    const date = new Date(row.date)
+    if (isNaN(date.getTime())) throw new Error("Fecha inválida")
+
+    // Procesar campo amount
+    const amount = parseFloat(row.amount)
+    if (isNaN(amount)) throw new Error("Monto inválido")
+
+    // Procesar campo category
+    const category = row.category ? row.category.trim() : undefined
+
+    // Procesar campo shared
+    let shared = false
+    if (row.shared !== undefined) {
+      shared =
+        row.shared === "true" ||
+        row.shared === "1" ||
+        row.shared === "TRUE" ||
+        row.shared === "sí" ||
+        row.shared === "Sí" ||
+        row.shared === "SI" ||
+        row.shared === "si"
+    }
+
+    return {
+      userId: row.userid,
+      date: date.toISOString().split("T")[0],
+      amount: Math.abs(amount),
+      category,
+      description: row.description,
+      month,
+      createdAt: new Date().toISOString(),
+      shared, // <-- nuevo campo
+    }
+  } catch (error) {
+    console.error("Error procesando fila:", row, error)
+    return null
+  }
+}
+
+const handlePreviewChange = (index: number, field: keyof Expense, value: any) => {
+  setPreview((prev) =>
+    prev.map((item, i) =>
+      i === index
+        ? {
+            ...item,
+            [field]:
+              field === "amount"
+                ? Number.parseFloat(value.replace(",", "."))
+                : field === "shared"
+                ? Boolean(value)
+                : value,
+          }
+        : item
+    )
+  )
+}
+
+

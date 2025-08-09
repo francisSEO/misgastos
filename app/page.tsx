@@ -17,7 +17,7 @@ export default function HomePage() {
       setUser(user)
       setLoading(false)
       if (user) {
-        router.push("/dashboard")
+        router.push("/reports")
       }
     })
 

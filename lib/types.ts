@@ -1,4 +1,5 @@
 export interface Expense {
+  shared: boolean
   id?: string
   userId: string
   date: string
