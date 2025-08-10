@@ -24,6 +24,7 @@ interface CsvRow {
   description: string
   amount: string
   category?: string
+  shared?: string
 }
 
 const CATEGORY_OPTIONS = [

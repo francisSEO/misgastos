@@ -47,6 +47,18 @@ export const categoryKeywords: Record<string, string[]> = {
   Educación: ["curso", "libro", "universidad", "colegio", "matrícula", "material"],
 }
 
+// Array de categorías para el selector del modal
+export const categories = [
+  { value: "Comida", label: "Comida" },
+  { value: "Transporte", label: "Transporte" },
+  { value: "Entretenimiento", label: "Entretenimiento" },
+  { value: "Salud", label: "Salud" },
+  { value: "Hogar", label: "Hogar" },
+  { value: "Ropa", label: "Ropa" },
+  { value: "Educación", label: "Educación" },
+  { value: "Otros", label: "Otros" },
+]
+
 export function categorizeExpense(description: string): string {
   const lowerDescription = description.toLowerCase()
 

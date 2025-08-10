@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Sidebar } from '@/components/sidebar'
 
 export const metadata: Metadata = {
   title: 'Control de Gastos',
@@ -25,7 +26,12 @@ html {
 }
         `}</style>
       </head>
-      <body className="min-h-screen bg-gradient-to-br from-[#17191D] to-[#121315]">{children}</body>
+      <body className="min-h-screen bg-gradient-to-br from-[#17191D] to-[#121315]">
+        <Sidebar />
+        <main className="lg:ml-64 min-h-screen">
+          {children}
+        </main>
+      </body>
     </html>
   )
 }

@@ -43,7 +43,6 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen">
-      <DashboardHeader userEmail={user.email ?? ""} onLogout={handleLogout} />
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <CsvImporter userId={user.uid} />
